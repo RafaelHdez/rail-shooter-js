@@ -3,7 +3,11 @@ import * as THREE from 'three';
 export class Enemy {
     constructor(target) {
         const geometry = new THREE.BoxGeometry(1, 1, 1);
-        const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        const material = new THREE.MeshStandardMaterial({
+            color: 0xff3333, // Rojo vibrante
+            metalness: 0.2,
+            roughness: 0.7
+        });
         this.mesh = new THREE.Mesh(geometry, material);
 
         const spawnZ = -300 - Math.random() * 30;

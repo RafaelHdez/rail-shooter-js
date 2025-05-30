@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-
 import { Player } from './player.js';
 import { Laser } from './laser.js';
 import { Enemy } from './enemy.js';
@@ -10,15 +9,25 @@ const stars = createStars(scene);
 const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
 camera.position.z = 10;
 
-const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('webgl') });
+const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('webgl'), alpha: false });
 renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
+renderer.setClearColor(0x000000, 1);
+
+// Luces
+scene.add(new THREE.AmbientLight(0xffffff, 0.2));
+const dirLight = new THREE.DirectionalLight(0x88ccff, 0.5);
+dirLight.position.set(-10, 10, -10);
+scene.add(dirLight);
+const backLight = new THREE.PointLight(0xff88cc, 1, 20);
+backLight.position.set(0, 0, 5);
+scene.add(backLight);
 
 // UI
 let score = 0;
-let lives = 10;
+let health = 100;
+let gameOver = false;
+
 const scoreElement = document.getElementById('score');
-const livesElement = document.getElementById('lives');
 updateUI();
 
 // Objetos del juego
@@ -26,15 +35,30 @@ const player = new Player(scene);
 const lasers = [];
 const enemies = [];
 
+// Raycaster y Crosshair
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+const aimPlane = new THREE.Plane(new THREE.Vector3(0, 0, -1), -20);
+
+window.addEventListener('mousemove', event => {
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+});
+
+// Crosshair 3D
+const crosshair = new THREE.Mesh(
+    new THREE.RingGeometry(0.3, 0.25, 60),
+    new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide })
+);
+scene.add(crosshair);
+
 // Controles
 const keys = {};
 window.addEventListener('keydown', e => keys[e.code] = true);
 window.addEventListener('keyup', e => keys[e.code] = false);
-
-// Disparo
-window.addEventListener('keydown', e => {
-    if (e.code === 'Space') {
-        const laser = new Laser(player.mesh.position);
+window.addEventListener('mousedown', e => {
+    if (e.button === 0) {
+        const laser = new Laser(player.mesh.position, crosshair.position);
         scene.add(laser.mesh);
         lasers.push(laser);
     }
@@ -52,12 +76,7 @@ function createStars(scene, count = 300) {
     }
 
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-
-    const material = new THREE.PointsMaterial({
-        color: 0xffffff,
-        size: 0.05,
-    });
-
+    const material = new THREE.PointsMaterial({ color: 0xffffff, size: 0.05 });
     const stars = new THREE.Points(geometry, material);
     scene.add(stars);
     return stars;
@@ -70,11 +89,23 @@ setInterval(() => {
     enemies.push(enemy);
 }, 1500);
 
+// UI
 function updateUI() {
-    scoreElement.textContent = `Score: ${score}`;
-    livesElement.textContent = `Lives: ${lives}`;
+    updateScore(score);
+    updateHealth(health);
 }
 
+function updateScore(points) {
+    score = points;
+    scoreElement.innerText = `Puntos: ${score}`;
+}
+
+function updateHealth(newHealth) {
+    health = Math.max(0, Math.min(100, newHealth));
+    document.getElementById("health-bar").style.width = `${health}%`;
+}
+
+// Animación principal
 const starSpeed = 0.5;
 
 function animate() {
@@ -92,14 +123,24 @@ function animate() {
 
     player.update(keys);
 
+    // Apuntado con crosshair
+    raycaster.setFromCamera(mouse, camera);
+    const intersectPoint = new THREE.Vector3();
+    raycaster.ray.intersectPlane(aimPlane, intersectPoint);
+    crosshair.position.copy(intersectPoint);
+    crosshair.lookAt(camera.position);
+    player.mesh.lookAt(intersectPoint);
+
+    // Actualizar lasers
     lasers.forEach((laser, i) => {
         laser.update();
-        if (laser.mesh.position.z > 50) {
+        if (laser.mesh.position.z > 50 || laser.mesh.position.z < -100) {
             scene.remove(laser.mesh);
             lasers.splice(i, 1);
         }
     });
 
+    // Actualizar enemigos
     enemies.forEach((enemy, i) => {
         enemy.update();
         if (enemy.mesh.position.z > 10) {
@@ -116,7 +157,7 @@ function animate() {
                 scene.remove(enemy.mesh);
                 lasers.splice(li, 1);
                 enemies.splice(ei, 1);
-                score++;
+                score += 10;
                 updateUI();
             }
         });
@@ -127,10 +168,11 @@ function animate() {
         if (enemy.mesh.position.distanceTo(player.mesh.position) < 1) {
             scene.remove(enemy.mesh);
             enemies.splice(ei, 1);
-            lives--;
+            updateHealth(health - 20);
             updateUI();
 
-            if (lives <= 0) {
+            if (health <= 0 && !gameOver) {
+                gameOver = true;
                 alert('¡Game Over!');
                 window.location.reload();
             }
@@ -139,11 +181,8 @@ function animate() {
 
     // Cámara sigue al jugador
     const damping = 0.05;
-    const targetX = player.mesh.position.x * 0.5;
-    const targetY = player.mesh.position.y * 0.5;
-
-    camera.position.x += (targetX - camera.position.x) * damping;
-    camera.position.y += (targetY - camera.position.y) * damping;
+    camera.position.x += (player.mesh.position.x * 0.5 - camera.position.x) * damping;
+    camera.position.y += (player.mesh.position.y * 0.5 - camera.position.y) * damping;
     camera.lookAt(player.mesh.position.x, player.mesh.position.y, 0);
 
     renderer.render(scene, camera);

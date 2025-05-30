@@ -6,9 +6,55 @@ body {
     font-family: sans-serif;
 }
 
+canvas {
+    cursor: none;
+    display: block;
+    width: 100vw;
+    height: 100vh;
+    position: absolute;
+    z-index: 1;
+}
+
 #ui {
     position: absolute;
     top: 10px;
     left: 10px;
     z-index: 10;
+}
+
+#hud {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    right: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: Arial, sans-serif;
+    font-size: 20px;
+    color: white;
+    pointer-events: none;
+    z-index: 10;
+}
+
+#score {
+    padding: 10px;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+}
+
+#health-container {
+    width: 200px;
+    height: 25px;
+    background-color: rgba(255, 0, 0, 0.3);
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid red;
+}
+
+#health-bar {
+    height: 100%;
+    width: 100%;
+    background-color: limegreen;
+    transition: width 0.3s ease;
 }

@@ -3,7 +3,11 @@ import * as THREE from 'three'
 export class Player {
     constructor(scene) {
         const geometry = new THREE.SphereGeometry(0.5, 32, 32)
-        const material = new THREE.MeshBasicMaterial({ color: 0x3498db })
+        const material = new THREE.MeshStandardMaterial({
+            color: 0x3498db, // Azul
+            metalness: 0.5,
+            roughness: 0.3
+        });
         this.mesh = new THREE.Mesh(geometry, material)
         scene.add(this.mesh)
 
