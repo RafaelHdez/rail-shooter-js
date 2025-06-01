@@ -2,6 +2,10 @@ import * as THREE from 'three';
 import { Player } from './player.js';
 import { Laser } from './laser.js';
 import { Enemy } from './enemy.js';
+import { Explosion } from './explosion.js';
+
+let gamepad = null;
+let playerFired = false;
 
 const scene = new THREE.Scene();
 const stars = createStars(scene);
@@ -34,6 +38,7 @@ updateUI();
 const player = new Player(scene);
 const lasers = [];
 const enemies = [];
+const explosions = [];
 
 // Raycaster y Crosshair
 const raycaster = new THREE.Raycaster();
@@ -64,6 +69,16 @@ window.addEventListener('mousedown', e => {
     }
 });
 
+window.addEventListener("gamepadconnected", (event) => {
+    console.log("Gamepad conectado:", event.gamepad);
+    gamepad = event.gamepad;
+});
+
+window.addEventListener("gamepaddisconnected", () => {
+    console.log("Gamepad desconectado");
+    gamepad = null;
+});
+
 function createStars(scene, count = 300) {
     const geometry = new THREE.BufferGeometry();
     const positions = [];
@@ -87,7 +102,7 @@ setInterval(() => {
     const enemy = new Enemy(player.mesh);
     scene.add(enemy.mesh);
     enemies.push(enemy);
-}, 1500);
+}, 600);
 
 // UI
 function updateUI() {
@@ -121,15 +136,96 @@ function animate() {
     }
     positions.needsUpdate = true;
 
+    // Control por teclado
     player.update(keys);
 
-    // Apuntado con crosshair
-    raycaster.setFromCamera(mouse, camera);
-    const intersectPoint = new THREE.Vector3();
-    raycaster.ray.intersectPlane(aimPlane, intersectPoint);
-    crosshair.position.copy(intersectPoint);
+    // Control por gamepad
+    const pads = navigator.getGamepads();
+    if (pads[0]) {
+        const gp = pads[0];
+
+        // Ejes del joystick izquierdo para mover al jugador
+        const leftHorizontal = gp.axes[0]; // -1 (izq) a 1 (der)
+        const leftVertical = gp.axes[1];   // -1 (arriba) a 1 (abajo)
+        const speed = 0.1;
+
+        // Mover al jugador (ajusta la velocidad si hace falta)
+        player.mesh.position.x += leftHorizontal * speed;
+        player.mesh.position.y += -leftVertical * speed;
+
+        // Ejes del joystick derecho para controlar el crosshair
+        const rightHorizontal = gp.axes[2]; // -1 (izq) a 1 (der)
+        const rightVertical = gp.axes[3];   // -1 (arriba) a 1 (abajo)
+
+        // Solo actualizar si hay movimiento significativo en el joystick derecho
+        if (Math.abs(rightHorizontal) > 0.1 || Math.abs(rightVertical) > 0.1) {
+            // Convertir los valores del joystick a coordenadas de pantalla
+            mouse.x += rightHorizontal * 0.02;
+            mouse.y += -rightVertical * 0.02;
+
+            // Limitar los valores entre -1 y 1
+            mouse.x = Math.max(-1, Math.min(1, mouse.x));
+            mouse.y = Math.max(-1, Math.min(1, mouse.y));
+        }
+
+        // Disparar con gatillo derecho (botón 7) o botón A (botón 0)
+        if (gp.buttons[7].pressed || gp.buttons[0].pressed) {
+            if (!playerFired) {
+                const laser = new Laser(player.mesh.position, crosshair.position);
+                scene.add(laser.mesh);
+                lasers.push(laser);
+                playerFired = true;
+            }
+        } else {
+            playerFired = false;
+        }
+    }
+
+    // Función para encontrar el enemigo más cercano
+    function findNearestEnemy() {
+        if (enemies.length === 0) return null;
+
+        let nearestEnemy = enemies[0];
+        let minDistance = Infinity;
+
+        enemies.forEach(enemy => {
+            const distance = enemy.mesh.position.distanceTo(player.mesh.position);
+            if (distance < minDistance) {
+                minDistance = distance;
+                nearestEnemy = enemy;
+            }
+        });
+
+        return nearestEnemy;
+    }
+
+    // Apuntado con crosshair - auto-aim al enemigo más cercano
+    const nearestEnemy = findNearestEnemy();
+
+    if (nearestEnemy) {
+        // Calcular la posición en el plano de apuntado donde el rayo desde la cámara
+        // intersecta con la dirección hacia el enemigo
+        const targetPosition = new THREE.Vector3();
+        targetPosition.copy(nearestEnemy.mesh.position);
+
+        // Proyectar la posición del enemigo en el plano de apuntado
+        raycaster.set(camera.position, targetPosition.sub(camera.position).normalize());
+        const intersectPoint = new THREE.Vector3();
+        raycaster.ray.intersectPlane(aimPlane, intersectPoint);
+
+        // Suavizar el movimiento del crosshair
+        const smoothFactor = 0.1;
+        crosshair.position.lerp(intersectPoint, smoothFactor);
+    } else {
+        // Si no hay enemigos, usar el control manual
+        raycaster.setFromCamera(mouse, camera);
+        const intersectPoint = new THREE.Vector3();
+        raycaster.ray.intersectPlane(aimPlane, intersectPoint);
+        crosshair.position.copy(intersectPoint);
+    }
+
     crosshair.lookAt(camera.position);
-    player.mesh.lookAt(intersectPoint);
+    player.mesh.lookAt(crosshair.position);
 
     // Actualizar lasers
     lasers.forEach((laser, i) => {
@@ -152,7 +248,11 @@ function animate() {
     // Colisiones: Láser vs Enemigo
     lasers.forEach((laser, li) => {
         enemies.forEach((enemy, ei) => {
-            if (laser.mesh.position.distanceTo(enemy.mesh.position) < 1) {
+            if (laser.mesh.position.distanceTo(enemy.mesh.position) < 5) {
+                // Create explosion at enemy position
+                const explosion = new Explosion(enemy.mesh.position.clone(), scene, 0xff3333);
+                explosions.push(explosion);
+
                 scene.remove(laser.mesh);
                 scene.remove(enemy.mesh);
                 lasers.splice(li, 1);
@@ -166,6 +266,10 @@ function animate() {
     // Colisiones: Enemigo vs Jugador
     enemies.forEach((enemy, ei) => {
         if (enemy.mesh.position.distanceTo(player.mesh.position) < 1) {
+            // Create explosion at enemy position
+            const explosion = new Explosion(enemy.mesh.position.clone(), scene, 0xff3333);
+            explosions.push(explosion);
+
             scene.remove(enemy.mesh);
             enemies.splice(ei, 1);
             updateHealth(health - 20);
@@ -184,6 +288,15 @@ function animate() {
     camera.position.x += (player.mesh.position.x * 0.5 - camera.position.x) * damping;
     camera.position.y += (player.mesh.position.y * 0.5 - camera.position.y) * damping;
     camera.lookAt(player.mesh.position.x, player.mesh.position.y, 0);
+
+    // Update explosions
+    const deltaTime = 1/60; // Approximate time between frames
+    for (let i = explosions.length - 1; i >= 0; i--) {
+        const isActive = explosions[i].update(deltaTime);
+        if (!isActive) {
+            explosions.splice(i, 1);
+        }
+    }
 
     renderer.render(scene, camera);
 }

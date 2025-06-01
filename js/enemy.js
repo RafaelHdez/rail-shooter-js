@@ -2,9 +2,11 @@ import * as THREE from 'three';
 
 export class Enemy {
     constructor(target) {
-        const geometry = new THREE.BoxGeometry(1, 1, 1);
+        const geometry = new THREE.BoxGeometry(3, 3, 3);
         const material = new THREE.MeshStandardMaterial({
             color: 0xff3333, // Rojo vibrante
+            emissive: 0xff3333,
+            emissiveIntensity: 10,
             metalness: 0.2,
             roughness: 0.7
         });
@@ -12,12 +14,12 @@ export class Enemy {
 
         const spawnZ = -300 - Math.random() * 30;
         this.mesh.position.set(
-            (Math.random() - 0.5) * 80,
-            (Math.random() - 0.5) * 16,
+            (Math.random() - 0.5) * 100,
+            (Math.random() - 0.5) * 32,
             spawnZ
         );
 
-        this.speed = 0.8;
+        this.speed = 1;
         this.target = target;
     }
 
