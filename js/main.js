@@ -97,12 +97,7 @@ function createStars(scene, count = 300) {
     return stars;
 }
 
-// Spawn enemigos
-setInterval(() => {
-    const enemy = new Enemy(player.mesh);
-    scene.add(enemy.mesh);
-    enemies.push(enemy);
-}, 600);
+// Spawn enemigos - now handled in startGame function
 
 // UI
 function updateUI() {
@@ -122,9 +117,45 @@ function updateHealth(newHealth) {
 
 // Animación principal
 const starSpeed = 0.5;
+let gameStarted = false;
+let enemySpawnInterval;
+
+// Get DOM elements
+const mainMenu = document.getElementById('main-menu');
+const hudElement = document.getElementById('hud');
+const startButton = document.getElementById('start-button');
+
+// Hide HUD initially
+hudElement.classList.add('hidden');
+
+// Add event listener to start button
+startButton.addEventListener('click', startGame);
+
+function startGame() {
+    // Hide menu and show HUD
+    mainMenu.classList.add('hidden');
+    hudElement.classList.remove('hidden');
+
+    // Start the game
+    gameStarted = true;
+
+    // Start spawning enemies
+    enemySpawnInterval = setInterval(() => {
+        const enemy = new Enemy(player.mesh);
+        scene.add(enemy.mesh);
+        enemies.push(enemy);
+    }, 600);
+
+    // Start animation loop if not already running
+    if (!animationFrameId) {
+        animate();
+    }
+}
+
+let animationFrameId;
 
 function animate() {
-    requestAnimationFrame(animate);
+    animationFrameId = requestAnimationFrame(animate);
 
     // Actualizar estrellas
     const positions = stars.geometry.attributes.position;
@@ -135,6 +166,12 @@ function animate() {
         }
     }
     positions.needsUpdate = true;
+
+    // If game hasn't started, just render the scene without game logic
+    if (!gameStarted) {
+        renderer.render(scene, camera);
+        return;
+    }
 
     // Control por teclado
     player.update(keys);
@@ -277,6 +314,7 @@ function animate() {
 
             if (health <= 0 && !gameOver) {
                 gameOver = true;
+                clearInterval(enemySpawnInterval);
                 alert('¡Game Over!');
                 window.location.reload();
             }
@@ -301,4 +339,5 @@ function animate() {
     renderer.render(scene, camera);
 }
 
+// Start animation loop (but not game logic)
 animate();
