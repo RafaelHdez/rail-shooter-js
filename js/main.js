@@ -3,6 +3,7 @@ import { Player } from './player.js';
 import { Laser } from './laser.js';
 import { Enemy } from './enemy.js';
 import { Explosion } from './explosion.js';
+import { AudioListener, Audio, AudioLoader } from 'three';
 
 let gamepad = null;
 let playerFired = false;
@@ -16,6 +17,37 @@ camera.position.z = 10;
 const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('webgl'), alpha: false });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor(0x000000, 1);
+
+const listener = new AudioListener();
+camera.add(listener);
+
+const audioLoader = new AudioLoader();
+
+// Sonidos
+const laserSound = new Audio(listener);
+const explosionSound = new Audio(listener);
+const damageSound = new Audio(listener);
+const bgMusic = new Audio(listener);
+
+// Cargar sonidos
+audioLoader.load('Audios/laser.WAV', buffer => {
+    laserSound.setBuffer(buffer);
+    laserSound.setVolume(0.3);
+});
+audioLoader.load('Audios/explosion.wav', buffer => {
+    explosionSound.setBuffer(buffer);
+    explosionSound.setVolume(0.2);
+});
+audioLoader.load('Audios/damage.wav', buffer => {
+    damageSound.setBuffer(buffer);
+    damageSound.setVolume(0.5);
+});
+audioLoader.load('Audios/music.mp3', buffer => {
+    bgMusic.setBuffer(buffer);
+    bgMusic.setLoop(true);
+    bgMusic.setVolume(0.2);
+    bgMusic.play();
+});
 
 // Luces
 scene.add(new THREE.AmbientLight(0xffffff, 0.2));
@@ -66,6 +98,9 @@ window.addEventListener('mousedown', e => {
         const laser = new Laser(player.mesh.position, crosshair.position);
         scene.add(laser.mesh);
         lasers.push(laser);
+
+        if (laserSound.isPlaying) laserSound.stop();
+        laserSound.play();
     }
 });
 
@@ -175,6 +210,9 @@ function animate() {
                 scene.add(laser.mesh);
                 lasers.push(laser);
                 playerFired = true;
+
+                if (laserSound.isPlaying) laserSound.stop();
+                laserSound.play();
             }
         } else {
             playerFired = false;
@@ -253,6 +291,9 @@ function animate() {
                 const explosion = new Explosion(enemy.mesh.position.clone(), scene, 0xff3333);
                 explosions.push(explosion);
 
+                if (explosionSound.isPlaying) explosionSound.stop();
+                explosionSound.play();
+
                 scene.remove(laser.mesh);
                 scene.remove(enemy.mesh);
                 lasers.splice(li, 1);
@@ -270,6 +311,9 @@ function animate() {
             const explosion = new Explosion(enemy.mesh.position.clone(), scene, 0xff3333);
             explosions.push(explosion);
 
+            if (damageSound.isPlaying) damageSound.stop();
+            damageSound.play();
+
             scene.remove(enemy.mesh);
             enemies.splice(ei, 1);
             updateHealth(health - 20);
@@ -278,6 +322,7 @@ function animate() {
             if (health <= 0 && !gameOver) {
                 gameOver = true;
                 alert('¡Game Over!');
+                bgMusic.pause();
                 window.location.reload();
             }
         }
