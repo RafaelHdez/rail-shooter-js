@@ -12,7 +12,7 @@ const urlsToCache = [
     "./Audios/explosion.wav",
     "./Audios/damage.wav",
     "./Audios/music.mp3",
-    "./icons/icon.jpeg",
+    "./public/icons/icon.jpeg",
 ];
 
 self.addEventListener("install", event => {

@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Space Shooter Infinity</title>
+    <link rel="manifest" href="/manifest.json">
+  <script type="module" crossorigin src="/assets/index-XYQCHm52.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-D1hQoMvm.css">
+</head>
+<body>
+    <canvas id="webgl"></canvas>
+    <div id="hud">
+        <div id="score">Puntos: 0</div>
+        <div id="health-container">
+            <div id="health-bar"></div>
+        </div>
+    </div>
+    <div id="main-menu">
+        <h1>Space Shooter Infinity</h1>
+        <button id="start-button">Start Game</button>
+    </div>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./public/sw.js')
+                .then(reg => console.log('Service Worker registrado', reg))
+                .catch(err => console.error('Error registrando SW:', err));
+        }
+    </script>
+</body>
+</html>
