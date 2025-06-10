@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Space Shooter Infinity</title>
+    <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
@@ -19,5 +20,12 @@
         <button id="start-button">Start Game</button>
     </div>
     <script type="module" src="./js/main.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('Service Worker registrado', reg))
+                .catch(err => console.error('Error registrando SW:', err));
+        }
+    </script>
 </body>
 </html>
