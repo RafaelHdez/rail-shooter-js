@@ -12,7 +12,7 @@ export class Enemy {
         });
         this.mesh = new THREE.Mesh(geometry, material);
 
-        const spawnZ = -300 - Math.random() * 30;
+        const spawnZ = -500 - Math.random() * 30;
         this.mesh.position.set(
             (Math.random() - 0.5) * 100,
             (Math.random() - 0.5) * 32,

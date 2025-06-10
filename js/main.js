@@ -167,6 +167,9 @@ hudElement.classList.add('hidden');
 startButton.addEventListener('click', startGame);
 
 function startGame() {
+    lasers.forEach(l => scene.remove(l.mesh));
+    lasers.length = 0;
+
     // Hide menu and show HUD
     mainMenu.classList.add('hidden');
     hudElement.classList.remove('hidden');
