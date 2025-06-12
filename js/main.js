@@ -4,6 +4,14 @@ import { Laser } from './laser.js';
 import { Enemy } from './enemy.js';
 import { Explosion } from './explosion.js';
 import { AudioListener, Audio, AudioLoader } from 'three';
+import {setupAuthUI} from "./authUI";
+import { loginUser, registerUser, subscribeToAuthChanges, handleAuthState, setGameStarted, logout } from "./authService.js";
+import {getMaxScore, updateMaxScore} from "./scoreService";
+import {getAuth} from "firebase/auth";
+
+// Autenticación
+const auth = setupAuthUI();
+const authInstance = getAuth();
 
 let gamepad = null;
 let playerFired = false;
@@ -159,6 +167,73 @@ let enemySpawnInterval;
 const mainMenu = document.getElementById('main-menu');
 const hudElement = document.getElementById('hud');
 const startButton = document.getElementById('start-button');
+
+// Crear un contenedor para el usuario en HTML
+const userInfo = document.createElement("div");
+userInfo.id = "user-info";
+userInfo.style.position = "fixed";
+userInfo.style.top = "10px";
+userInfo.style.right = "20px";
+userInfo.style.zIndex = "1000";
+userInfo.style.color = "white";
+userInfo.style.fontSize = "1rem";
+document.body.appendChild(userInfo);
+
+// Escuchar envíos del formulario
+auth.onSubmit(async (mode, { email, password, nickname }) => {
+    try {
+        if (mode === "register") {
+            await registerUser({ email, password, nickname });
+        } else {
+            await loginUser({ email, password });
+        }
+        auth.closeModal();
+    } catch (err) {
+        alert("Error: " + err.message);
+    }
+});
+
+// Escuchar cambios de sesión
+subscribeToAuthChanges(async (user) => {
+    if (user) {
+        // Mostrar solo botón de Start Game y el nombre del usuario
+        document.getElementById("login-button").style.display = "none";
+        document.getElementById("register-button").style.display = "none";
+        userInfo.textContent = `Hola, ${user.displayName || user.email}`;
+        startButton.style.display = "block";
+
+        const maxScore = await getMaxScore(user.uid);
+        const maxScoreElement = document.getElementById("max-score");
+        if (maxScoreElement) {
+            maxScoreElement.textContent = `Max-Score: ${maxScore}`;
+        }
+
+    } else {
+        // Si no está logueado, mostrar opciones
+        document.getElementById("login-button").style.display = "inline-block";
+        document.getElementById("register-button").style.display = "inline-block";
+        userInfo.textContent = "";
+        startButton.style.display = "none";
+    }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    handleAuthState();
+
+    const startButton = document.getElementById('start-button');
+    const logoutButton = document.getElementById('logout-button');
+
+    startButton.addEventListener('click', () => {
+        // Aquí va la lógica para iniciar el juego
+        setGameStarted(true);
+        document.getElementById('main-menu').classList.add('hidden');
+        // Puedes iniciar el loop del juego o mostrar instrucciones, etc.
+    });
+
+    logoutButton.addEventListener('click', () => {
+        logout();
+    });
+});
 
 // Hide HUD initially
 hudElement.classList.add('hidden');
