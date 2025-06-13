@@ -6,6 +6,7 @@
   },
   "dependencies": {
     "firebase": "^11.9.1",
+    "nipplejs": "^0.10.2",
     "three": "^0.176.0"
   },
   "devDependencies": {

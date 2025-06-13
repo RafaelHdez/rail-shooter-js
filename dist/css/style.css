@@ -1,9 +1,21 @@
+.silkscreen-regular {
+    font-family: "Silkscreen", sans-serif;
+    font-weight: 400;
+    font-style: normal;
+}
+
+.silkscreen-bold {
+    font-family: "Silkscreen", sans-serif;
+    font-weight: 700;
+    font-style: normal;
+}
+
 body {
     margin: 0;
     overflow: hidden;
     background-color: black;
     color: white;
-    font-family: sans-serif;
+    font-family: 'Silkscreen', sans-serif;
 }
 
 canvas {
@@ -41,6 +53,7 @@ canvas {
     padding: 10px;
     background-color: rgba(0, 0, 0, 0.5);
     border-radius: 8px;
+    font-family: 'Silkscreen', sans-serif;
 }
 
 #health-container {
@@ -203,4 +216,33 @@ canvas {
     left: 20px;
     color: white;
     z-index: 1000;
+}
+
+#joystick-container {
+    position: fixed;
+    bottom: 60px;
+    left: 30px;
+    width: 150px;
+    height: 150px;
+    z-index: 1000;
+    touch-action: none;
+}
+
+#shoot-button {
+    position: fixed;
+    bottom: 80px;
+    right: 30px;
+    width: 100px;
+    height: 100px;
+    background-color: rgba(255, 50, 50, 0.8);
+    color: white;
+    font-weight: bold;
+    font-size: 1.2rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    user-select: none;
+    z-index: 1000;
+    touch-action: none;
 }

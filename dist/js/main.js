@@ -15,6 +15,7 @@ const authInstance = getAuth();
 
 let gamepad = null;
 let playerFired = false;
+let joystick, joystickVector = { x: 0, y: 0 };
 
 const scene = new THREE.Scene();
 const stars = createStars(scene);
@@ -199,7 +200,7 @@ subscribeToAuthChanges(async (user) => {
         // Mostrar solo botón de Start Game y el nombre del usuario
         document.getElementById("login-button").style.display = "none";
         document.getElementById("register-button").style.display = "none";
-        userInfo.textContent = `Hola, ${user.displayName || user.email}`;
+        userInfo.textContent = `Usuario: ${user.displayName || user.email}`;
         startButton.style.display = "block";
 
         const maxScore = await getMaxScore(user.uid);
@@ -214,6 +215,8 @@ subscribeToAuthChanges(async (user) => {
         document.getElementById("register-button").style.display = "inline-block";
         userInfo.textContent = "";
         startButton.style.display = "none";
+        // Deshabilitamos el texto de puntuación máxima
+        document.getElementById("max-score").textContent = "";
     }
 });
 
@@ -227,7 +230,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Aquí va la lógica para iniciar el juego
         setGameStarted(true);
         document.getElementById('main-menu').classList.add('hidden');
-        // Puedes iniciar el loop del juego o mostrar instrucciones, etc.
+        if (isMobile()) {
+            document.getElementById('shoot-button').classList.remove('hidden');
+        }
     });
 
     logoutButton.addEventListener('click', () => {
@@ -266,6 +271,41 @@ function startGame() {
 }
 
 let animationFrameId;
+
+// Nueva función para manejar el game over
+async function handleGameOver() {
+    gameOver = true;
+    clearInterval(enemySpawnInterval);
+    bgMusic.pause();
+
+    const user = authInstance.currentUser;
+    if (user) {
+        await updateMaxScore(user.uid, score);
+        const updatedMaxScore = await getMaxScore(user.uid);
+        const maxScoreElement = document.getElementById("max-score");
+        if (maxScoreElement) {
+            maxScoreElement.textContent = `Max-Score: ${updatedMaxScore}`;
+        }
+    }
+
+    alert('¡Game Over!');
+    window.location.reload();
+}
+
+function shootLaser() {
+    const laser = new Laser(player.mesh.position, crosshair.position);
+    scene.add(laser.mesh);
+    lasers.push(laser);
+
+    if (laserSound.isPlaying) laserSound.stop();
+    laserSound.play();
+}
+
+const shootButton = document.getElementById('shoot-button');
+shootButton.addEventListener('touchstart', (e) => {
+    e.preventDefault(); // evita que el navegador interprete el toque
+    shootLaser();
+});
 
 function animate() {
     animationFrameId = requestAnimationFrame(animate);
@@ -420,7 +460,8 @@ function animate() {
     });
 
     // Colisiones: Enemigo vs Jugador
-    enemies.forEach((enemy, ei) => {
+    for (const enemy of enemies) {
+        const ei = enemies.indexOf(enemy);
         if (enemy.mesh.position.distanceTo(player.mesh.position) < 1) {
             // Create explosion at enemy position
             const explosion = new Explosion(enemy.mesh.position.clone(), scene, 0xff3333);
@@ -435,14 +476,13 @@ function animate() {
             updateUI();
 
             if (health <= 0 && !gameOver) {
-                gameOver = true;
-                clearInterval(enemySpawnInterval);
-                alert('¡Game Over!');
-                bgMusic.pause();
-                window.location.reload();
+                // Llama a la función asíncrona pero no esperes su resultado
+                handleGameOver()
+                    .catch(error => console.error("Error en handleGameOver:", error));
+                return; // Sal del bucle de animación inmediatamente
             }
         }
-    });
+    }
 
     // Cámara sigue al jugador
     const damping = 0.05;
@@ -460,7 +500,46 @@ function animate() {
     }
 
     renderer.render(scene, camera);
+
+    // Movimiento táctil desde joystick virtual
+    if (joystickVector.x !== 0 || joystickVector.y !== 0) {
+        const speed = 0.1; // puedes ajustar esto si va muy rápido o lento
+        player.mesh.position.x += joystickVector.x * speed;
+        player.mesh.position.y += joystickVector.y * speed;
+    }
 }
 
 // Start animation loop (but not game logic)
 animate();
+
+function isMobile() {
+    return /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+}
+
+if (isMobile()) {
+    initJoystick();
+}
+
+function initJoystick() {
+    const container = document.getElementById('joystick-container');
+    container.classList.remove('hidden');
+
+    const joystick = nipplejs.create({
+        zone: container,
+        mode: 'static',
+        position: { left: '50%', top: '50%' },
+        color: 'white'
+    });
+
+    joystick.on('move', (evt, data) => {
+        if (data.vector) {
+            joystickVector.x = data.vector.x;
+            joystickVector.y = data.vector.y;
+        }
+    });
+
+    joystick.on('end', () => {
+        joystickVector.x = 0;
+        joystickVector.y = 0;
+    });
+}

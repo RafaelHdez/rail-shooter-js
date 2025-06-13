@@ -5,8 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Space Shooter Infinity</title>
     <link rel="manifest" href="/manifest.json">
-  <script type="module" crossorigin src="/assets/index-XYQCHm52.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-D1hQoMvm.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap');
+    </style>
+  <script type="module" crossorigin src="/assets/index-C-3MYQcI.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-CKY_qWsf.css">
 </head>
 <body>
     <canvas id="webgl"></canvas>
@@ -19,7 +22,28 @@
     <div id="main-menu">
         <h1>Space Shooter Infinity</h1>
         <button id="start-button">Start Game</button>
-    </div>
+        <button id="login-button">Iniciar Sesión</button>
+        <button id="register-button">Registrarse</button>
+        <button id="logout-button" class="hidden">Cerrar Sesión</button>
+    </div>
+    <div id="auth-modal" class="hidden">
+        <div class="modal-content">
+            <h2 id="modal-title">Autenticación</h2>
+            <form id="auth-form">
+                <label for="nickname"></label><input type="text" id="nickname" placeholder="Nombre de usuario" required>
+                <label for="email"></label><input type="email" id="email" placeholder="Correo electrónico" required>
+                <label for="password"></label><input type="password" id="password" placeholder="Contraseña" required>
+                <button type="submit" id="submit-auth">Aceptar</button>
+                <button type="button" id="close-modal">Cancelar</button>
+            </form>
+        </div>
+    </div>
+    <div id="joystick-container" class="hidden"></div>
+    <div id="shoot-button" class="hidden">FIRE</div>
+    <div id="max-score">
+        Max-Score: 0
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/nipplejs@0.10.2/dist/nipplejs.min.js"></script>
     <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('./public/sw.js')

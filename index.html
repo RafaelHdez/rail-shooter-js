@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Space Shooter Infinity</title>
     <link rel="manifest" href="/manifest.json">
-    <link rel="stylesheet" href="./css/style.css">
+    <link rel="stylesheet" href="public/css/style.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap');
+    </style>
 </head>
 <body>
     <canvas id="webgl"></canvas>
@@ -34,10 +37,13 @@
             </form>
         </div>
     </div>
-    <div id="max-score" style="position: fixed; top: 10px; left: 20px; color: white; z-index: 1000;">
+    <div id="joystick-container" class="hidden"></div>
+    <div id="shoot-button" class="hidden">FIRE</div>
+    <div id="max-score">
         Max-Score: 0
     </div>
-    <script type="module" src="./js/main.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/nipplejs@0.10.2/dist/nipplejs.min.js"></script>
+    <script type="module" src="public/js/main.js"></script>
     <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('./public/sw.js')
